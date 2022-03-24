@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
+import os
+import datetime
 
 def download_aws(s3_object):
     from os import makedirs, sep
@@ -133,14 +135,25 @@ def get_ACH_files_AWS():
                 [subject, devloc, devID, createdate] = start.split('_')
                 filetype = 'geneactiv'
         else:
-            try:
-                [subject, end] = filename.split('_', 1)
+            if filename.endswith('.Wlk'):
+                filename = filename.replace(' ', '')
+                filename = filename.replace('-', '_')
+                #[subject, end] = filename.split('_', 1)
+                try:
+                    [subject, end] = filename.split('_g', 1)
+                except:
+                    [subject, end] = filename.split('_G', 1)
+
+                subject = subject.replace('_', '-')
                 devID = 'gaitrite'
                 devloc = 'gaitrite'
                 createdate = ''
                 filetype = 'gaitrite.wlk'
-            except ValueError:
-                subject = ''
+            else:
+                filename = filename.replace(' ', '')
+                filename = filename.replace('-', '_')
+                subject = filename.split('_G')[0]
+                subject = subject.replace('_', '-')
                 devID = 'gaitrite'
                 devloc = 'gaitrite'
                 filetype = 'gaitrite.MDB'
@@ -158,6 +171,45 @@ def get_ACH_files_AWS():
 
     return filename_df
 
+def save_files(df, save_name):
+    save_path = './results/'
+    if os.path.exists(save_path):
+        pass
+    else:
+        os.makedirs(save_path)
+    date = datetime.datetime.today().strftime('%Y%m%d')
+    df.to_csv(save_path+'{}_{}.csv'.format(save_name, date), index=False)
+
+def read_visit_data(file, subject=None):
+    '''
+    Function to read the visit data information and return the visit dates
+    :param file: '/Users/psaltd/Desktop/achondroplasia/C4181001_VISIT_DATE_09FEB2022.xlsx'
+    :param subject: Optional: Subject ID
+    :return:
+    '''
+    df = pd.read_excel(file, skiprows=3, usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 11])
+    qc_df = pd.read_csv('/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv')
+
+    visit_matches = []
+    for index,row in qc_df.iterrows():
+        sub_df = df[df['SUBJECT\n'] == row.subject_ID]
+        recording_start = pd.to_datetime(row.start_time, format='%Y-%m-%d %H:%M:%S:%f')
+        matching_visit = sub_df[pd.to_datetime(recording_start.date()) == sub_df['VISIT DATE']]
+        if matching_visit.empty:
+            #print('Visit not on list')
+            differences = abs(sub_df['VISIT DATE'] - pd.to_datetime(recording_start.date()))
+            matching_visit = sub_df.iloc[np.argmin(differences)]
+            smallest_difference = np.min(differences)
+            matching_str = 'closest match is ± {} days'.format(smallest_difference.days)
+        else:
+            matching_str = 'matches visit date'
+
+        visit_matches.append(matching_str)
+
+    qc_df['matching_visit'] = visit_matches
+    save_files(qc_df, 'C4181001_QC_with_visit_checks')
+
 if __name__ == '__main__':
+    read_visit_data('/Users/psaltd/Desktop/achondroplasia/C4181001_VISIT_DATE_09FEB2022.xlsx')
     files = get_ACH_files_AWS()
     [downloads(x.s3_obj) for y, x in tqdm(files.iterrows())]
