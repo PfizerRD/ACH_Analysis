@@ -12,8 +12,8 @@ def download_aws(s3_object):
 
     bucket = s3_object.bucket_name
     path = s3_object.key
-    #local_path = local_path + path
-    local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}'
+    local_path = f'/Volumes/Promise_Pegasus/ach/{path}'
+    #local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}'
 
     # only check the directory part
     makedirs(sep.join(local_path.split('/')[:-1]), exist_ok=True)
@@ -34,8 +34,8 @@ class downloads():
         #s3_object = self.s3_object
         bucket = s3_object.bucket_name
         path = s3_object.key
-        # local_path = local_path + path
-        local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}'
+        local_path = f'/Volumes/Promise_Pegasus/ach/{path}'
+        #local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}'
         if os.path.exists(local_path):
             print('{} is already downloaded!'.format(local_path.split('/')[-1]))
             pass
@@ -210,6 +210,6 @@ def read_visit_data(file, subject=None):
     save_files(qc_df, 'C4181001_QC_with_visit_checks')
 
 if __name__ == '__main__':
-    read_visit_data('/Users/psaltd/Desktop/achondroplasia/C4181001_VISIT_DATE_09FEB2022.xlsx')
+    #read_visit_data('/Users/psaltd/Desktop/achondroplasia/C4181001_VISIT_DATE_09FEB2022.xlsx')
     files = get_ACH_files_AWS()
     [downloads(x.s3_obj) for y, x in tqdm(files.iterrows())]
