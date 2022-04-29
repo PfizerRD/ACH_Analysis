@@ -5,6 +5,11 @@ from datetime import datetime
 import math
 
 def GA_QC(filename):
+    '''
+    Function to extract relevant information from GENEActiv bin files for QC
+    :param filename: filename of GENEActiv Bin file
+    :return: dictionary of information for QC
+    '''
 
     #String maniplulation to get subID
     f = filename.split('/')[-1]
@@ -113,10 +118,16 @@ def GA_QC(filename):
     #print(obj)
     return obj
 
-if __name__ == '__main__':
-    files = get_ACH_files_AWS()
-    [downloads(x.s3_obj) for y, x in tqdm(files.iterrows())]
-    path = '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/'
+def run_GA_QC(path, download_flag=False):
+    '''
+    Run GA QC For ACH Study
+    :param path: path to local data directory
+    :return: Output is a QC file in the results directory
+    '''
+    if download_flag:
+        files = get_ACH_files_AWS()
+        [downloads(x.s3_obj) for y, x in tqdm(files.iterrows())]
+
     files = os.listdir(path)
     outputs = []
     for f in files:
@@ -128,7 +139,8 @@ if __name__ == '__main__':
     results = pd.DataFrame(outputs)
     results = results.sort_values('subject_ID')
 
-    qc_file = '/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv'
+    #qc_file = '/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv'
+    qc_file = './results/C4181001_GA_QC.csv'
     if os.path.exists(qc_file):
         qc_df = pd.read_csv(qc_file)
         #change SUBJIDs to int
@@ -147,8 +159,14 @@ if __name__ == '__main__':
 
         date = datetime.today().strftime('%Y%m%d')
         #updated_QC.to_csv('/Users/psaltd/Desktop/Cachexia/Cax1009_GA_QC_%s.csv' % (date), index = False)
-        updated_QC.to_csv('/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv', index = False)
+        #updated_QC.to_csv('/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv', index = False)
+        save_files(updated_QC, 'C4181001_GA_QC')
     else:
-        results.to_csv(qc_file, index=False)
+        #results.to_csv(qc_file, index=False)
+        save_files(results, 'C4181001_GA_QC')
 
+
+if __name__ == '__main__':
+    path = '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/'
+    run_GA_QC(path, download_flag=False)
     #GA_QC('/Users/psaltd/Downloads/DNK-01-002_back_059550_2021-09-06 14-44-40.bin')

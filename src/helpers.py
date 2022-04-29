@@ -34,8 +34,8 @@ class downloads():
         #s3_object = self.s3_object
         bucket = s3_object.bucket_name
         path = s3_object.key
-        local_path = f'/Volumes/Promise_Pegasus/ach/{path}'
-        #local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}'
+        #local_path = f'/Volumes/Promise_Pegasus/ach/{path}'
+        local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}'
         if os.path.exists(local_path):
             print('{} is already downloaded!'.format(local_path.split('/')[-1]))
             pass
