@@ -183,6 +183,5 @@ def run_GA_QC(path, download_flag=False):
 
 
 if __name__ == '__main__':
-    path = '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/'
+    path = '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/' # TODO: Change to working data directory
     run_GA_QC(path, download_flag=True)
-    #GA_QC('/Users/psaltd/Downloads/DNK-01-002_back_059550_2021-09-06 14-44-40.bin')
