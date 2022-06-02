@@ -1,0 +1,80 @@
+Device Type,GENEActiv           
+Device Model,1.1
+Device Unique Serial Code,
+Device Firmware Version,Ver4.08a date14Jul14
+Calibration Date,2020-01-21 15:47:30:000
+Application name & version ,GENEActiv PC Software 3.3
+,
+,
+,
+,
+Measurement Frequency,
+Start Time,
+Last measurement,
+Device Location Code,
+Time Zone,
+,
+,
+,
+,
+,
+Subject Code,
+Date of Birth,1/1/00
+Sex,
+Height,
+Weight,
+Handedness Code,
+Subject Notes,
+,
+,
+,
+Study Centre,
+Study Code,
+Investigator ID,
+Exercise Type,
+Config Operator ID,
+Config Time,
+Config Notes,
+Extract Operator ID,
+Extract Time,
+Extract Notes,
+,
+,
+,
+,
+,
+,
+,
+,
+,
+,
+Sensor type,MEMS accelerometer x-axis
+Range,-8 to 8             
+Resolution,0.0039
+Units,g                   
+Additional information,
+Sensor type,MEMS accelerometer y-axis
+Range,-8 to 8             
+Resolution,0.0039
+Units,g                   
+Additional information,
+Sensor type,MEMS accelerometer z-axis 
+Range,-8 to 8             
+Resolution,0.0039
+Units,g                   
+Additional information,
+Sensor type,Lux Photodiode 400nm - 1100nm 
+Range,0 to 5000           
+Resolution,5
+Units,lux                 
+Additional information,
+Sensor type,User button event marker
+Range,1 or 0
+Resolution,
+Units,
+Additional information,1=pressed
+Sensor type,Linear active thermistor
+Range,0 to 70             
+Resolution,0.1
+Units,deg. C              
+Additional information,

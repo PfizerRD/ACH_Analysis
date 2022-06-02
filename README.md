@@ -10,6 +10,9 @@ TODO In package (4/29/22):
 3. Make PKMAS QC
 4. Verify all start times match
 
+# Required packages:
+1. SKDH - scikit digital health
+> conda install -c conda-forge scikit-digital-health
 
 FOR QC run:
 

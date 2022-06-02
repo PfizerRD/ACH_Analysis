@@ -1,0 +1,16 @@
+# Save epoch data
+
+aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/processed/epochs/ s3://ecd-dmti-medinfo-master/C4181001/processed/geneactiv_60sEpoch/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+
+# Save epoch visuals - plots for wear time
+
+aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/processed/GENEActiv_Raw_Activity/ s3://ecd-dmti-medinfo-master/C4181001/processed/geneactiv_epoch_activity_figures/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+
+# Save macros to s3
+
+aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/processed/macros/ s3://ecd-dmti-medinfo-master/C4181001/analysis/GENEActiv_macros/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+
+# Save QC to S3
+
+aws s3 --profile saml cp /Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_GA_QC_20220601.csv s3://ecd-dmti-medinfo-master/C4181001/analysis/QC/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+

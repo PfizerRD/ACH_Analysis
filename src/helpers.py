@@ -23,19 +23,27 @@ def download_aws(s3_object):
     return local_path
 
 class downloads():
+    '''
+    Class which downloads data from S3 location
+    '''
 
     def __init__(self, s3_object):
         self.s3_object = s3_object
         self.download_aws(self.s3_object)
 
     def download_aws(self, s3_object):
+        '''
+        Function to download the s3 objects
+        :param s3_object:
+        :return:
+        '''
         import os
 
         #s3_object = self.s3_object
         bucket = s3_object.bucket_name
         path = s3_object.key
         #local_path = f'/Volumes/Promise_Pegasus/ach/{path}'
-        local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}'
+        local_path = f'/Users/psaltd/Desktop/achondroplasia/data/{path}' #TODO: change to directory data folder
         if os.path.exists(local_path):
             print('{} is already downloaded!'.format(local_path.split('/')[-1]))
             pass
@@ -97,23 +105,19 @@ def hdf_to_data(hdf_data):
 
 def get_ACH_files_AWS():
     '''
-    This function collects the filenames for APDM QC as a dataframe
-    :param task: the type of task you are looking for:
-        ['Walk', 'Sway', 'Sit_to_Stand', 'TUG', 'Analysis']
+    This function collects the files from S3 and returns their paths, names, and device types as a dataframe
+
     :return: a dataframe with the filename info for S3
+
     '''
 
     path = 's3://dtbsprodamrasp128127'
     ## need samlutil permissions for the GAS study
 
-    #tasks = ['Carpet', 'Normal', 'Fast', 'Tile', 'Slow', 'Activities_Part1', 'Activities_Part2', 'Elliptical', 'OPAL']
-
     prefix = 'raw_zone/c4181001/sensordata/'
     extension = '.bin'
-
     exclude = ''
     include = '*'#['.bin', '.Wlk', '.MDB']
-
     s3 = boto3.Session(profile_name='saml').resource('s3')
     bucket = s3.Bucket(path[5:])
     files1 = [Path(i.key) for i in bucket.objects.filter(Prefix=prefix)]
@@ -172,6 +176,14 @@ def get_ACH_files_AWS():
     return filename_df
 
 def save_files(df, save_name):
+    '''
+    Script for saving files with a specific naming convention and incorporating the timestamp into the name. Only saves
+    data in .csv format at this time.
+
+    :param df: dataframe you are interested in saving to a file
+    :param save_name: a string - naming convention which can be used for saving the dataframe to .csv
+    :return: None - file is outputted to results directory
+    '''
     save_path = './results/'
     if os.path.exists(save_path):
         pass
@@ -180,34 +192,70 @@ def save_files(df, save_name):
     date = datetime.datetime.today().strftime('%Y%m%d')
     df.to_csv(save_path+'{}_{}.csv'.format(save_name, date), index=False)
 
-def read_visit_data(file, subject=None):
+def read_visit_data(visit_date, file='../data/CRF/SV2.csv', subject=None):
     '''
     Function to read the visit data information and return the visit dates
     :param file: '/Users/psaltd/Desktop/achondroplasia/C4181001_VISIT_DATE_09FEB2022.xlsx'
     :param subject: Optional: Subject ID
     :return:
     '''
-    df = pd.read_excel(file, skiprows=3, usecols=[1, 2, 3, 4, 5, 6, 7, 8, 9, 11])
-    qc_df = pd.read_csv('/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv')
+    visit_df = pd.read_csv(file)
+    qc_df = pd.read_csv('./results/C4181001_GA_QC.csv')
+    sub_visit= visit_df[(visit_df.Subject == subject) &
+                        (visit_df.SVDAT_YYYY == float(pd.to_datetime(visit_date, format="%Y-%m-%d %H:%M:%S:%f").date().year)) &
+                        (visit_df.SVDAT_MM == float(pd.to_datetime(visit_date, format="%Y-%m-%d %H:%M:%S:%f").date().month)) &
+                        (visit_df.SVDAT_DD == float(pd.to_datetime(visit_date, format="%Y-%m-%d %H:%M:%S:%f").date().day))]
+    if sub_visit.empty:
+        print('Subject: {} visit: {} not found in CRF data'.format(subject, visit_date))
+        visit_num = ''
+        visit_num_string = ''
+    elif len(sub_visit) == 1:
+        visit_num_string = sub_visit.InstanceName.values[0].strip(' (1)')
+        visit_num = int(sub_visit.InstanceName.values[0].split(' ')[1])
+    else:
+        raise ValueError
 
-    visit_matches = []
-    for index,row in qc_df.iterrows():
-        sub_df = df[df['SUBJECT\n'] == row.subject_ID]
-        recording_start = pd.to_datetime(row.start_time, format='%Y-%m-%d %H:%M:%S:%f')
-        matching_visit = sub_df[pd.to_datetime(recording_start.date()) == sub_df['VISIT DATE']]
-        if matching_visit.empty:
-            #print('Visit not on list')
-            differences = abs(sub_df['VISIT DATE'] - pd.to_datetime(recording_start.date()))
-            matching_visit = sub_df.iloc[np.argmin(differences)]
-            smallest_difference = np.min(differences)
-            matching_str = 'closest match is ± {} days'.format(smallest_difference.days)
-        else:
-            matching_str = 'matches visit date'
+    return visit_num, visit_num_string
+    #
+    # visit_matches = []
+    # for index,row in qc_df.iterrows():
+    #     sub_df = visit_df[visit_df['SUBJECT\n'] == row.subject_ID]
+    #     recording_start = pd.to_datetime(row.start_time, format='%Y-%m-%d %H:%M:%S:%f')
+    #     matching_visit = sub_df[pd.to_datetime(recording_start.date()) == sub_df['VISIT DATE']]
+    #     if matching_visit.empty:
+    #         #print('Visit not on list')
+    #         differences = abs(sub_df['VISIT DATE'] - pd.to_datetime(recording_start.date()))
+    #         matching_visit = sub_df.iloc[np.argmin(differences)]
+    #         smallest_difference = np.min(differences)
+    #         matching_str = 'closest match is ± {} days'.format(smallest_difference.days)
+    #     else:
+    #         matching_str = 'matches visit date'
+    #
+    #     visit_matches.append(matching_str)
+    #
+    # qc_df['matching_visit'] = visit_matches
+    # save_files(qc_df, 'C4181001_QC_with_visit_checks')
 
-        visit_matches.append(matching_str)
+def get_PKMAS_visit(subject, visit_date):
+    pkmas_path = '../data/pkmas_metrics/'
+    files = os.listdir(pkmas_path)
+    subject_file = [x for x in files if subject in x]
+    if subject_file:
+        pkmas_file = os.path.join(pkmas_path, subject_file[0])
+        gr_header = pd.read_csv(pkmas_file, header=None, names=['meta', 'val'], nrows=10, usecols=(0, 1),
+                                index_col=0)
+        # get the timestamp
+        gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'])
+        gr_visit_date = gr_timestamp.date()
+    else:
+        gr_visit_date = np.nan
 
-    qc_df['matching_visit'] = visit_matches
-    save_files(qc_df, 'C4181001_QC_with_visit_checks')
+    if visit_date == gr_visit_date:
+        matches_gaitrite = 1
+    else:
+        matches_gaitrite = 0
+
+    return matches_gaitrite
 
 if __name__ == '__main__':
     #read_visit_data('/Users/psaltd/Desktop/achondroplasia/C4181001_VISIT_DATE_09FEB2022.xlsx')

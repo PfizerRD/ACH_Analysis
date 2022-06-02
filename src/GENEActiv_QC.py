@@ -1,5 +1,8 @@
 import os
 import re
+
+import pandas as pd
+
 from helpers import *
 from datetime import datetime
 import math
@@ -8,7 +11,7 @@ def GA_QC(filename):
     '''
     Function to extract relevant information from GENEActiv bin files for QC
     :param filename: filename of GENEActiv Bin file
-    :return: dictionary of information for QC
+    :return: dictionary of information for GENEActiv QC
     '''
 
     #String maniplulation to get subID
@@ -94,6 +97,18 @@ def GA_QC(filename):
                          pd.to_datetime(start_time_str, format="%Y-%m-%d %H:%M:%S:%f")
 
     #TODO: Make a list of pass/fail criteria
+    visit_number, visit_number_string = read_visit_data(visit_date = start_time_str, subject=subj)
+
+    if (recording_duration.days >= 7) & (int(freq_rate) == 50):
+        usable = 1
+    else:
+        usable = 0
+
+    pkmas_visit_match = get_PKMAS_visit(subj, pd.to_datetime(start_time_str, format="%Y-%m-%d %H:%M:%S:%f").date())
+    if pkmas_visit_match != 0:
+        matches_pkmas = 1
+    else:
+        matches_pkmas = 0
 
     obj = {'subject_ID': subj,
            'subID_bin': subjID,
@@ -113,7 +128,11 @@ def GA_QC(filename):
            'end_volt': voltage2,
            'setup_notes': notes_str,
            'filesize': '{:.2f} MB'.format(os.path.getsize(filename) / 1000000),
-           'filename': filename.split('/')[-1]}
+           'filename': filename.split('/')[-1],
+           'visit_number': visit_number,
+           'visit_number_string': visit_number_string,
+           'Usable': usable,
+           'matches_PKMAS': matches_pkmas}
 
     #print(obj)
     return obj
@@ -137,12 +156,12 @@ def run_GA_QC(path, download_flag=False):
             continue
 
     results = pd.DataFrame(outputs)
-    results = results.sort_values('subject_ID')
+    results = results.sort_values('subject_ID') #TODO: adjust the visit info to reflect the new visit dates from CRF
 
     #qc_file = '/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv'
-    qc_file = './results/C4181001_GA_QC.csv'
+    qc_file = './results/C4181001_GA_QC_20220601.csv'
     if os.path.exists(qc_file):
-        qc_df = pd.read_csv(qc_file)
+        qc_df = pd.read_csv(qc_file, encoding='latin-1')
         #change SUBJIDs to int
         qc_df['subID_bin'] = [int(x) if not math.isnan(x) else '' for x in qc_df.subID_bin]
         qc_df['study_center'] = [int(x) if not math.isnan(x) else '' for x in qc_df.study_center]
@@ -157,9 +176,6 @@ def run_GA_QC(path, download_flag=False):
         updated_QC = pd.concat([qc_df, new_rows])
         updated_QC = updated_QC.reset_index(drop=True)
 
-        date = datetime.today().strftime('%Y%m%d')
-        #updated_QC.to_csv('/Users/psaltd/Desktop/Cachexia/Cax1009_GA_QC_%s.csv' % (date), index = False)
-        #updated_QC.to_csv('/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv', index = False)
         save_files(updated_QC, 'C4181001_GA_QC')
     else:
         #results.to_csv(qc_file, index=False)
@@ -168,5 +184,5 @@ def run_GA_QC(path, download_flag=False):
 
 if __name__ == '__main__':
     path = '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/'
-    run_GA_QC(path, download_flag=False)
+    run_GA_QC(path, download_flag=True)
     #GA_QC('/Users/psaltd/Downloads/DNK-01-002_back_059550_2021-09-06 14-44-40.bin')
