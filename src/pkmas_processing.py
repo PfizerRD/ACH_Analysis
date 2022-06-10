@@ -47,19 +47,28 @@ def apply_pkmasQC(df, qc_df):
         print('stop')
     return df_step4
 
-def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220609.csv'):
+def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220610.csv'):
     #read in qc file
     file = filepath.split('/')[-1]
     try:
         subject, end = file.split('_')
         visit_number = 1
+        test_number = 1
     except ValueError:
-        subject, visit, end = file.split('_')
-        visit_number = visit.strip('visit')
-    if subject == 'DNK-01-029':
-        print('stop')
+        try:
+            subject, visit, end = file.split('_')
+            visit_number = visit.strip('visit')
+            test_number = 1
+        except:
+            subject, visit, test, end = file.split('_')
+            visit_number = visit.strip('visit')
+            test_number = test.strip('test')
+
+    # if subject == 'DNK-01-029':
+    #     print('stop')
     qc_df = pd.read_csv(qc_file)
-    qc_row = qc_df[(qc_df.subject == subject) & (qc_df.visit == int(visit_number))]
+    qc_row = qc_df[(qc_df.subject == subject) & (qc_df.visit == int(visit_number)) &
+    (qc_df.test == int(test_number))]
 
     #Read file from AWS and take median of metrics
     df = pd.read_csv(filepath)
@@ -93,6 +102,7 @@ def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220609
     #Join file metadata for indexing
     meta_obj = pd.DataFrame([{'subject': subject,
                               'visit': visit_number,
+                              'test': test_number,
                               'filename': filepath.split('/')[-1],
                               'mean_cadence': cadence}])
 
@@ -102,7 +112,8 @@ def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220609
 
 def runPKMASprocessing():
     results = []
-    dat_path = '../data/gaitrite/'
+    #dat_path = '../data/gaitrite/'
+    dat_path = '../data/gaitrite_20220608/'
     files = [x for x in os.listdir(dat_path) if x.endswith('PKMAS.csv')]
     for file in tqdm(files):
         out = get_PKMAS_medians(os.path.join(dat_path, file))

@@ -20,12 +20,17 @@ def run_PKMAS_qc(filepath):
     try:
         subject, end = file.split('_')
         visit_number = 1
+        test_number = 1
     except ValueError:
-        subject, visit, end = file.split('_')
-        visit_number = visit.strip('visit')
-
+        try:
+            subject, visit, end = file.split('_')
+            visit_number = visit.strip('visit')
+            test_number = 1
+        except:
+            subject, visit, test, end = file.split('_')
+            visit_number = visit.strip('visit')
+            test_number = test.strip('test')
     pkmas_df = pd.read_csv(filepath)
-
 
     ## Check Meta info ----
     subject = pkmas_df.iloc[0, 1].split(',')[1].strip()
@@ -82,6 +87,7 @@ def run_PKMAS_qc(filepath):
     check_df['laps'] = N_laps
     check_df['subject'] = subject
     check_df['visit'] = visit_number
+    check_df['test'] = test_number
 
     #just added 20211220
     step_backwards = check_backwards_steps(sub_df)
@@ -90,7 +96,7 @@ def run_PKMAS_qc(filepath):
     return check_df
 
 if __name__ == '__main__':
-    dat_path = '../data/gaitrite/'
+    dat_path = '../data/gaitrite_20220608/'
     files = [x for x in os.listdir(dat_path) if x.endswith('PKMAS.csv')]
     results = []
     for file in tqdm(files):

@@ -237,27 +237,68 @@ def read_visit_data(visit_date, file='../data/CRF/SV2.csv', subject=None):
     # save_files(qc_df, 'C4181001_QC_with_visit_checks')
 
 def get_PKMAS_visit(subject, visit_date):
-    pkmas_path = '../data/pkmas_metrics/'
+    #pkmas_path = '../data/pkmas_metrics/'
+    pkmas_path = '../data/gaitrite_20220608/'
     files = os.listdir(pkmas_path)
-    subject_file = [x for x in files if subject in x]
+    subject_file = [x for x in files if subject in x and x.endswith('carpet_sensors.csv')]
     if subject_file:
-        pkmas_file = os.path.join(pkmas_path, subject_file[0])
-        gr_header = pd.read_csv(pkmas_file, header=None, names=['meta', 'val'], nrows=10, usecols=(0, 1),
-                                index_col=0)
-        # get the timestamp
-        gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'])
-        gr_visit_date = gr_timestamp.date()
+        gr_visit_dates = []
+        for sf in subject_file:
+            pkmas_file = os.path.join(pkmas_path, sf)
+            gr_header = pd.read_csv(pkmas_file, header=None, names=['meta', 'val'], nrows=10, usecols=(0, 1),
+                                    index_col=0)
+            # get the timestamp
+            gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'])
+            gr_visit_date = gr_timestamp.date()
+            gr_visit_dates.append(gr_visit_date)
+        match_idx = [i for i in range(len(gr_visit_dates)) if gr_visit_dates[i] == visit_date]
+        if len(match_idx) == 1:
+            correct_file = subject_file[match_idx[0]]
+            gr_visit_date = gr_visit_dates[match_idx[0]]
+        elif len(match_idx) >1:
+            gr_visit_date = np.unique(gr_visit_dates)[0]
+            correct_file = pd.DataFrame(subject_file).iloc[match_idx].values.tolist()
+        else:
+            correct_file = np.nan
+            gr_visit_date = np.nan
     else:
         gr_visit_date = np.nan
+        correct_file = np.nan
 
     if visit_date == gr_visit_date:
         matches_gaitrite = 1
     else:
         matches_gaitrite = 0
 
-    return matches_gaitrite
+    return matches_gaitrite, correct_file
+
+
+def pkmas_txt_reader(file, file_type):
+    '''
+    This function reads the PKMAS .txt files and returns the dataframe, subject ID, and test_time
+    :param file: pkmas file (.txt)
+    :param file_type: metrics or sensors - determines how reader operates and returns
+    :return: [subjectID, test_time, data]
+    '''
+    file = '/Users/psaltd/Documents/GitHub/ACH_Analysis/data/gaitrite_20220608/C4181004 DNK-01-017  - C4181004 - DNK-01-017 - DNK-01-017 - 5-4-2022 11-07-35 AM - E.txt'
+    header_df = pd.read_csv(file, nrows=10, sep=';:')
+    subject = header_df.iloc[0][0].split(';')[1].split(', ')[1]
+    test_time = pd.to_datetime(header_df.iloc[6][0].split(';')[1])
+    if file_type == 'metrics':
+        data_columns = pd.read_csv(file, skiprows=10, nrows=1, sep=';').columns
+        data = pd.read_csv(file, skiprows=27, sep=';', names=data_columns, header = None)
+    elif file_type == 'sensors':
+        data = pd.read_csv(file, skiprows=11, sep=';')
+    else:
+        print('please enter a valid file type (sensors or metrics)')
+        raise ValueError
+
+    return subject, test_time, data
+
+
 
 if __name__ == '__main__':
+    pkmas_txt_reader(file = 'd', file_type='sensors')
     #read_visit_data('/Users/psaltd/Desktop/achondroplasia/C4181001_VISIT_DATE_09FEB2022.xlsx')
     files = get_ACH_files_AWS()
     [downloads(x.s3_obj) for y, x in tqdm(files.iterrows())]
