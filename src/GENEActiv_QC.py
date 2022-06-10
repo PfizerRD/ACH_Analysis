@@ -104,7 +104,7 @@ def GA_QC(filename):
     else:
         usable = 0
 
-    pkmas_visit_match = get_PKMAS_visit(subj, pd.to_datetime(start_time_str, format="%Y-%m-%d %H:%M:%S:%f").date())
+    pkmas_visit_match, gaitrite_filename = get_PKMAS_visit(subj, pd.to_datetime(start_time_str, format="%Y-%m-%d %H:%M:%S:%f").date())
     if pkmas_visit_match != 0:
         matches_pkmas = 1
     else:
@@ -132,7 +132,8 @@ def GA_QC(filename):
            'visit_number': visit_number,
            'visit_number_string': visit_number_string,
            'Usable': usable,
-           'matches_PKMAS': matches_pkmas}
+           'matches_PKMAS': matches_pkmas,
+           'pkmas_filename': gaitrite_filename}
 
     #print(obj)
     return obj

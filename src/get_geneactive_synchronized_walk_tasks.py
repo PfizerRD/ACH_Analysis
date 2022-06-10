@@ -153,12 +153,18 @@ def get_update_sync_dataframe(sync, data_path):
 
 
 def main():
-    DATA_PATH = Path("../data/gaitrite/")
+
+    qc_file = './results/C4181001_GA_QC_20220610.csv'
+    qc_df = pd.read_csv(qc_file)
+    gaitrite_qcs = qc_df[~qc_df.pkmas_filename.isna()]
+
+    DATA_PATH = Path("../data/gaitrite_20220608/")
+    #DATA_PATH = Path("/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/")
     
     # create a storage for the offsets
     # check if it exists. If it does exist, load it
     # if it does not exist, create the columns we need
-    p = Path("geneactive_gaitrite_offsets.csv")
+    p = Path("geneactive_gaitrite_offsets_.csv")
     if p.exists():
         sync_df = pd.read_csv(p)
         # make sure that the path-names are Path
@@ -168,6 +174,7 @@ def main():
             columns=[
                 "ga_file",
                 "gr_sensor_file",
+                "ga_task_filename",
                 "ga_task_file",
                 "offset",
                 "processed",
@@ -176,12 +183,16 @@ def main():
         ).astype({"offset": "float", "processed": "bool"})
 
     # update the dataframe if necessary
-    sync_df = get_update_sync_dataframe(sync_df, DATA_PATH)
-    
+    sync_df = get_update_sync_dataframe(sync_df, Path("/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/"))
+    sync_df_list = [row for index, row in sync_df.iterrows() if str(row.ga_file).split('/')[-1]
+                    in gaitrite_qcs.filename.values]
+    sync_df = pd.DataFrame(sync_df_list)
+
     # create the path for the GaitRite sensor file
     sync_df['gr_sensor_file'] = sync_df['ga_file'].apply(
         lambda x: x.with_name(
             f"{x.stem.split('_')[0].replace('-', '_')}_PKMAS_carpet_sensor.csv"
+            #f"{x.stem.split('_')[0]}_PKMAS_carpet_sensor.csv"
         )
     )
     # create the desired output for the GeneActive task file
