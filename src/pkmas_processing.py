@@ -37,17 +37,18 @@ def apply_pkmasQC(df, qc_df):
         asyn_steps = asyn_steps[0].split(', ')
     except:
         pass
-    try:
-        if len(asyn_steps) > 0:
-            df_step4 = pd.concat([row for index, row in df_step3.iterrows() if row.iloc[0]
-                                      not in asyn_steps], axis=1).T
-        else:
-            df_step4 = df_step3
-    except:
-        print('stop')
+
+    if len(asyn_steps) > 0:
+        df_step4 = pd.concat([row for index, row in df_step3.iterrows() if row.iloc[0]
+                                  not in asyn_steps], axis=1).T
+    else:
+        df_step4 = df_step3
+    if (qc_df.subject.unique()[0] == 'DNK-01-016') & (qc_df.visit.unique()[0] == 1) & (qc_df.test.unique()[0] == 1):
+        setindex = []
+
     return df_step4
 
-def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220610.csv'):
+def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220630.csv'):
     #read in qc file
     file = filepath.split('/')[-1]
     try:
@@ -95,7 +96,11 @@ def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220610
     #Get the Cadence (mean - steps/min)
     cadence_col = df.iloc[:,3].dropna().reset_index(drop = True)
     if 'Cadence' in cadence_col.iloc[0]: #inspect the column to make sure its correct!
+        # TODO: confirm with our own check on cadence
         cadence = float(cadence_col.iloc[1])
+        #estimate cadence ourselves -- cadence = 1/(median(Step time)) * 60 or
+        # estimate cadence ourselves -- cadence = 1/(median(Stride time)) * 120 -- 2*60 for strides
+        estimated_cadence = 1/np.nanmedian(sub_df['Step Time (sec.)'].astype('float')) * 60
     else:
         raise ValueError
 
@@ -104,7 +109,9 @@ def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220610
                               'visit': visit_number,
                               'test': test_number,
                               'filename': filepath.split('/')[-1],
-                              'mean_cadence': cadence}])
+                              'mean_cadence': cadence,
+                              'estimated_median_cadence': round(estimated_cadence, 2),
+                              'valid_steps': len(sub_df)}])
 
     medians_subdf = meta_obj.join(medians_subdf)
 

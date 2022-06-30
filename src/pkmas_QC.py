@@ -67,7 +67,8 @@ def run_PKMAS_qc(filepath):
 
     step_df = Step_check(sub_df)
     asym_df = Asym_check(sub_df)
-    footstep_check = check_PKMAS_footsteps(sub_df, threshold=3.25, plot=False)
+    footstep_check = check_PKMAS_footsteps(sub_df, threshold=2.6, plot=False,
+                    metrics = [0, 1, 5, 8, 9, 10, 11, 12, 13, 21, 22, 23, 24, 27, 28, 29, 30, 31, 32, 33, 36])
 
     try:
         check_df = asym_df.merge(step_df)
