@@ -1,5 +1,4 @@
-from pathlib import Path
-
+from helpers import *
 import pandas as pd
 import numpy as np
 import skdh
@@ -102,8 +101,11 @@ def synchronize_geneactive_gaitrite(geneactive_file, gaitrite_sensor_file, task_
                             index_col=0)
     gr = pd.read_csv(gaitrite_sensor_file, skiprows=11)
 
+    [subject, gr_header, gr] = pkmas_txt_reader(gaitrite_sensor_file, 'sensors')
+
     # get the timestamp
-    gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'], utc=True)
+    #gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'], utc=True)
+    gr_timestamp = pd.to_datetime(gr_header)
     gr_time = int(gr_timestamp.to_datetime64()) / 1e9
 
     # groupby time and sum
@@ -141,33 +143,43 @@ def synchronize_geneactive_gaitrite(geneactive_file, gaitrite_sensor_file, task_
 
     return offset
 
+def get_qc_file(path = './results/'):
+    files = os.listdir(path)
+    qc_files = sorted([x for x in files if ('QC' in x) and (len(x.split('_')) == 4)], reverse=True)
+
+    return qc_files[0]
+
+
 if __name__ == '__main__':
-    qc_file = '/Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_GA_QC_20220610.csv'
+    qc_filename = get_qc_file()
+    qc_file = os.path.join('./results/', qc_filename)
     qc_df = pd.read_csv(qc_file)
     gaitrite_qcs = qc_df[~qc_df.pkmas_filename.isna()]
 
-    gaitrite_path = '/Users/psaltd/Documents/GitHub/ACH_Analysis/data/gaitrite_20220608/'
+    gaitrite_path = '/Users/psaltd/Documents/GitHub/ACH_Analysis/data/pkmas_txt_files/'
     ga_filepath = '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/'
     ga_segments = []
     offsets = []
     ga_files = []
+    os.makedirs('../data/gaitrite_processed/', exist_ok=True)
     for index, row in tqdm(gaitrite_qcs.iterrows()):
         #print(row)
         geneA_name = os.path.join(ga_filepath, row.filename)
         geneA_save_name = row.filename.strip('.bin') + '_gait_task'
         # if os.path.exists(
         #     '/Users/psaltd/Desktop/achondroplasia/data/GENEActiv_GAITRite_Alignment/' + geneA_save_name + '.npz'): continue
-        if os.path.exists('../data/gaitrite_20220610/' + geneA_save_name + '.npz'): continue
+        if os.path.exists('../data/gaitrite_processed/' + geneA_save_name + '.npz'): continue
         gaitrite_name = row.pkmas_filename
         if len(gaitrite_name) > 70:
             print(gaitrite_name)
             tmp_list = gaitrite_name.strip('[').strip(']')
             gaitrite_names = tmp_list.split(', ')
             for name in gaitrite_names:
-                name = name.strip(']').strip('[')
+                name = name.strip(']').strip('[').replace('G.txt', 'E.txt')
                 which_vis = '_'.join(name.split('_')[1:]).strip(".csv'")
-                geneA_save_name = '{}_v{}_{}'.format(row.filename.strip('.bin'), which_vis, 'gait_task')
-                if os.path.exists('../data/gaitrite_20220610/' + geneA_save_name + '.npz'): continue
+                #geneA_save_name = '{}_v{}_{}'.format(row.filename.strip('.bin'), which_vis, 'gait_task')
+                geneA_save_name = '{}_{}'.format(name.strip(' - E.txt'), 'gait_task')
+                if os.path.exists('../data/gaitrite_processed/' + geneA_save_name + '.npz'): continue
                 gait_name_final = os.path.join(gaitrite_path, name.strip("'"))
                 offset = synchronize_geneactive_gaitrite(geneA_name,
                                                          gait_name_final,
@@ -196,7 +208,8 @@ if __name__ == '__main__':
     new_df['filename'] = [x.split('/')[-1] for x in new_df.ga_files.values]
 
     gaitrite_qcs = gaitrite_qcs.merge(new_df)
-    gaitrite_qcs.to_csv('./results/C4181001_gaitrite_alignment_20220610.csv', index=False)
+    gaitrite_qcs.to_csv('./results/C4181001_gaitrite_alignment_{}.csv'.format(datetime.today().strftime('%Y%m%d')),
+                        index=False)
 
     # [-1.9354838709677438, 'DNK-01-023_left wrist_059554_2021-09-09 11-25-58_visit1_test1_PKMAS_carpet_sensor_gait_task']
     # [-1.1612903225806406, 'DNK-01-023_left wrist_059555_2022-01-10 07-53-01_visit2_test2_PKMAS_carpet_sensor_gait_task']

@@ -238,26 +238,30 @@ def read_visit_data(visit_date, file='../data/CRF/SV2.csv', subject=None):
 
 def get_PKMAS_visit(subject, visit_date):
     #pkmas_path = '../data/pkmas_metrics/'
-    pkmas_path = '../data/gaitrite_20220608/'
+    pkmas_path = '../data/pkmas_txt_files/' #changed to for txt files
     files = os.listdir(pkmas_path)
-    subject_file = [x for x in files if subject in x and x.endswith('carpet_sensors.csv')]
+    # subject_file = [x for x in files if subject in x and x.endswith('carpet_sensors.csv')]
+    subject_file = [x for x in files if subject in x and x.endswith('G.txt')]
     if subject_file:
         gr_visit_dates = []
         for sf in subject_file:
             pkmas_file = os.path.join(pkmas_path, sf)
-            gr_header = pd.read_csv(pkmas_file, header=None, names=['meta', 'val'], nrows=10, usecols=(0, 1),
-                                    index_col=0)
+            # gr_header = pd.read_csv(pkmas_file, header=None, names=['meta', 'val'], nrows=10, usecols=(0, 1),
+            #                         index_col=0)
+            [subject_reader, test_time, data] = pkmas_txt_reader(pkmas_file, 'metrics')
+
             # get the timestamp
-            gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'])
-            gr_visit_date = gr_timestamp.date()
+            #gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'])
+            #gr_visit_date = gr_timestamp.date()
+            gr_visit_date = test_time.date()
             gr_visit_dates.append(gr_visit_date)
         match_idx = [i for i in range(len(gr_visit_dates)) if gr_visit_dates[i] == visit_date]
         if len(match_idx) == 1:
             correct_file = subject_file[match_idx[0]]
             gr_visit_date = gr_visit_dates[match_idx[0]]
         elif len(match_idx) >1:
-            gr_visit_date = np.unique(gr_visit_dates)[0]
-            correct_file = pd.DataFrame(subject_file).iloc[match_idx].values.tolist()
+            gr_visit_date = np.unique(gr_visit_dates)
+            correct_file = np.concatenate(np.array(pd.DataFrame(subject_file).iloc[match_idx].values.tolist())).tolist()
         else:
             correct_file = np.nan
             gr_visit_date = np.nan
@@ -265,10 +269,16 @@ def get_PKMAS_visit(subject, visit_date):
         gr_visit_date = np.nan
         correct_file = np.nan
 
-    if visit_date == gr_visit_date:
-        matches_gaitrite = 1
-    else:
-        matches_gaitrite = 0
+    try:
+        if visit_date == gr_visit_date:
+            matches_gaitrite = 1
+        else:
+            matches_gaitrite = 0
+    except:
+        if visit_date in gr_visit_date:
+            matches_gaitrite = 1
+        else:
+            matches_gaitrite = 0
 
     return matches_gaitrite, correct_file
 
@@ -280,7 +290,7 @@ def pkmas_txt_reader(file, file_type):
     :param file_type: metrics or sensors - determines how reader operates and returns
     :return: [subjectID, test_time, data]
     '''
-    file = '/Users/psaltd/Documents/GitHub/ACH_Analysis/data/gaitrite_20220608/C4181004 DNK-01-017  - C4181004 - DNK-01-017 - DNK-01-017 - 5-4-2022 11-07-35 AM - E.txt'
+    #file = '/Users/psaltd/Documents/GitHub/ACH_Analysis/data/gaitrite_20220608/C4181004 DNK-01-017  - C4181004 - DNK-01-017 - DNK-01-017 - 5-4-2022 11-07-35 AM - E.txt'
     header_df = pd.read_csv(file, nrows=10, sep=';:')
     subject = header_df.iloc[0][0].split(';')[1].split(', ')[1]
     test_time = pd.to_datetime(header_df.iloc[6][0].split(';')[1])
@@ -294,8 +304,6 @@ def pkmas_txt_reader(file, file_type):
         raise ValueError
 
     return subject, test_time, data
-
-
 
 if __name__ == '__main__':
     pkmas_txt_reader(file = 'd', file_type='sensors')
