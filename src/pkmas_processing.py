@@ -11,10 +11,10 @@ from tqdm import tqdm
 
 def apply_pkmasQC(df, qc_df):
     steps_to_remove = qc_df.remove_steps.unique()[0].strip('[').strip(']').split(' ')
-    df_step1 = pd.concat([row.T for index, row in df.iterrows() if str(row.iloc[0]) not in steps_to_remove], axis = 1).T
-
+    df_step1 = pd.concat([row.T for index, row in df.iterrows() if str(row.iloc[0] - 1) not in steps_to_remove], axis = 1).T
+    # Adding a -1 to adjust for indeces values vs step # from 1 in the dataframe
     #step 2 check - < 50% steps
-    indx_less50perc = qc_df[qc_df['50perc_steps'] == 1.0]
+    indx_less50perc = qc_df[(qc_df['50perc_steps'] == 1.0) | (qc_df['50perc_steps'] == True)]
     if indx_less50perc.empty:
         df_step2 = df_step1
     else:
@@ -28,8 +28,8 @@ def apply_pkmasQC(df, qc_df):
         df_step3 = df_step2
     else:
         unique_back = backwards_steps.backwards_steps.unique()
-        indeces_back = [int(x.split(', ')[1].strip(')')) for x in unique_back]
-        df_step3 = pd.concat([row for index, row in df_step2.iterrows() if row.iloc[0] not in indeces_back], axis =1).T
+        indeces_back = [int(x.split(', ')[1].strip(')')) for x in unique_back] #cast as type int
+        df_step3 = pd.concat([row for index, row in df_step2.iterrows() if row.iloc[0]-1 not in indeces_back], axis =1).T
 
     #asymmetric step removal
     asyn_steps = [x.strip('[').strip(']') for x in qc_df.asym_error if not x == '[]']
@@ -39,8 +39,8 @@ def apply_pkmasQC(df, qc_df):
         pass
 
     if len(asyn_steps) > 0:
-        df_step4 = pd.concat([row for index, row in df_step3.iterrows() if row.iloc[0]
-                                  not in asyn_steps], axis=1).T
+        df_step4 = pd.concat([row for index, row in df_step3.iterrows() if str(row.iloc[0] -1)
+                                  not in asyn_steps], axis=1).T #cast as type string
     else:
         df_step4 = df_step3
     # if (qc_df.subject.unique()[0] == 'DNK-01-016') & (qc_df.visit.unique()[0] == 1) & (qc_df.test.unique()[0] == 1):

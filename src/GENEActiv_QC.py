@@ -160,7 +160,7 @@ def run_GA_QC(path, download_flag=False):
     results = results.sort_values('subject_ID') #TODO: adjust the visit info to reflect the new visit dates from CRF
 
     #qc_file = '/Users/psaltd/Desktop/achondroplasia/QC/C4181001_GA_QC.csv'
-    qc_file = './results/C4181001_GA_QC_20220601.csv'
+    qc_file = './results/C4181001_GA_QC_2022061.csv'
     if os.path.exists(qc_file):
         qc_df = pd.read_csv(qc_file, encoding='latin-1')
         #change SUBJIDs to int
