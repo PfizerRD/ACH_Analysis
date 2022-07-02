@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 def apply_pkmasQC(df, qc_df):
     steps_to_remove = qc_df.remove_steps.unique()[0].strip('[').strip(']').split(' ')
-    df_step1 = pd.concat([row.T for index, row in df.iterrows() if row.iloc[0] not in steps_to_remove], axis = 1).T
+    df_step1 = pd.concat([row.T for index, row in df.iterrows() if str(row.iloc[0]) not in steps_to_remove], axis = 1).T
 
     #step 2 check - < 50% steps
     indx_less50perc = qc_df[qc_df['50perc_steps'] == 1.0]
@@ -43,39 +43,41 @@ def apply_pkmasQC(df, qc_df):
                                   not in asyn_steps], axis=1).T
     else:
         df_step4 = df_step3
-    if (qc_df.subject.unique()[0] == 'DNK-01-016') & (qc_df.visit.unique()[0] == 1) & (qc_df.test.unique()[0] == 1):
-        setindex = []
+    # if (qc_df.subject.unique()[0] == 'DNK-01-016') & (qc_df.visit.unique()[0] == 1) & (qc_df.test.unique()[0] == 1):
+    #     setindex = []
 
     return df_step4
 
-def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220630.csv'):
+def get_PKMAS_medians(filepath, qc_file = None):
     #read in qc file
     file = filepath.split('/')[-1]
-    try:
-        subject, end = file.split('_')
-        visit_number = 1
-        test_number = 1
-    except ValueError:
-        try:
-            subject, visit, end = file.split('_')
-            visit_number = visit.strip('visit')
-            test_number = 1
-        except:
-            subject, visit, test, end = file.split('_')
-            visit_number = visit.strip('visit')
-            test_number = test.strip('test')
+    # try:
+    #     subject, end = file.split('_')
+    #     visit_number = 1
+    #     test_number = 1
+    # except ValueError:
+    #     try:
+    #         subject, visit, end = file.split('_')
+    #         visit_number = visit.strip('visit')
+    #         test_number = 1
+    #     except:
+    #         subject, visit, test, end = file.split('_')
+    #         visit_number = visit.strip('visit')
+    #         test_number = test.strip('test')
 
     # if subject == 'DNK-01-029':
     #     print('stop')
     qc_df = pd.read_csv(qc_file)
-    qc_row = qc_df[(qc_df.subject == subject) & (qc_df.visit == int(visit_number)) &
-    (qc_df.test == int(test_number))]
+    # qc_row = qc_df[(qc_df.subject == subject) & (qc_df.visit == int(visit_number)) &
+    # (qc_df.test == int(test_number))]
+    qc_row = qc_df[(qc_df.filename == file)]
 
     #Read file from AWS and take median of metrics
-    df = pd.read_csv(filepath)
-    columns = df.iloc[10, :]
-    sub_df = df.iloc[26:, :]
-    sub_df.columns = columns
+    #df = pd.read_csv(filepath)
+    [subject, test_time, cadence, sub_df] = pkmas_txt_reader(filepath, 'metrics')
+    #columns = df.iloc[10, :]
+    #sub_df = df.iloc[26:, :]
+    #sub_df.columns = columns
 
     sub_df = apply_pkmasQC(sub_df, qc_row)  # Uncomment to implement QC checks
     #Need to reduce dataframe to isolate the raw data
@@ -83,31 +85,39 @@ def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220630
     medians_subdf = pd.DataFrame([medians_subdf])
     medians_subdf.columns = sub_df.iloc[:, 6:].columns
 
-    if columns[5:].isnull().values.any(): #Most likely a formatting error on the file from PKMAS (skip 1 more row)
-        columns = df.iloc[11, :]
-        sub_df = df.iloc[27:, :]
-        sub_df.columns = columns
-        medians_subdf = np.nanmedian(sub_df.iloc[:, 6:].astype('float'), axis=0)
-        medians_subdf = pd.DataFrame([medians_subdf])
-        medians_subdf.columns = sub_df.iloc[:, 6:].columns
-    else:
-        pass
+    # if columns[5:].isnull().values.any(): #Most likely a formatting error on the file from PKMAS (skip 1 more row)
+    #     columns = df.iloc[11, :]
+    #     sub_df = df.iloc[27:, :]
+    #     sub_df.columns = columns
+    #     medians_subdf = np.nanmedian(sub_df.iloc[:, 6:].astype('float'), axis=0)
+    #     medians_subdf = pd.DataFrame([medians_subdf])
+    #     medians_subdf.columns = sub_df.iloc[:, 6:].columns
+    # else:
+    #     pass
 
-    #Get the Cadence (mean - steps/min)
-    cadence_col = df.iloc[:,3].dropna().reset_index(drop = True)
-    if 'Cadence' in cadence_col.iloc[0]: #inspect the column to make sure its correct!
-        # TODO: confirm with our own check on cadence
-        cadence = float(cadence_col.iloc[1])
+    #Get the Cadence (mean - steps/min) --- from .csv file
+    # cadence_col = sub_df.iloc[:,3].dropna().reset_index(drop = True) #'Cadence (steps/min.)'
+    # if 'Cadence' in cadence_col.iloc[0]: #inspect the column to make sure its correct!
+    #     # TODO: confirm with our own check on cadence
+    #     cadence = float(cadence_col.iloc[1])
+    #     #estimate cadence ourselves -- cadence = 1/(median(Step time)) * 60 or
+    #     # estimate cadence ourselves -- cadence = 1/(median(Stride time)) * 120 -- 2*60 for strides
+    #     estimated_cadence = 1/np.nanmedian(sub_df['Step Time (sec.)'].astype('float')) * 60
+    # else:
+    #     raise ValueError
+
+    if cadence:
+        cadence = float(cadence)
         #estimate cadence ourselves -- cadence = 1/(median(Step time)) * 60 or
         # estimate cadence ourselves -- cadence = 1/(median(Stride time)) * 120 -- 2*60 for strides
         estimated_cadence = 1/np.nanmedian(sub_df['Step Time (sec.)'].astype('float')) * 60
     else:
         raise ValueError
-
     #Join file metadata for indexing
     meta_obj = pd.DataFrame([{'subject': subject,
-                              'visit': visit_number,
-                              'test': test_number,
+                              #'visit': visit_number,
+                              #'test': test_number,
+                              'test_time': test_time,
                               'filename': filepath.split('/')[-1],
                               'mean_cadence': cadence,
                               'estimated_median_cadence': round(estimated_cadence, 2),
@@ -120,10 +130,11 @@ def get_PKMAS_medians(filepath , qc_file = './results/C4181001_pkmas_qc_20220630
 def runPKMASprocessing():
     results = []
     #dat_path = '../data/gaitrite/'
-    dat_path = '../data/gaitrite_20220608/'
-    files = [x for x in os.listdir(dat_path) if x.endswith('PKMAS.csv')]
+    dat_path = '../data/pkmas_txt_files/'
+    #files = [x for x in os.listdir(dat_path) if x.endswith('PKMAS.csv')]
+    files = [x for x in os.listdir(dat_path) if x.endswith('G.txt')]
     for file in tqdm(files):
-        out = get_PKMAS_medians(os.path.join(dat_path, file))
+        out = get_PKMAS_medians(os.path.join(dat_path, file), get_qc_file())
         if np.nan in out:
             raise Warning
         results.append(out)
@@ -138,6 +149,12 @@ def runPKMASprocessing():
         os.makedirs(save_path)
 
     save_files(res_df, 'C4181001_pkmas_gait_metrics')
+
+def get_qc_file(path = './results/'):
+    files = os.listdir(path)
+    qc_files = sorted([x for x in files if ('pkmas_qc' in x) and (len(x.split('_')) == 4)], reverse=True)
+
+    return os.path.join('./results/', qc_files[0])
 
 if __name__ == '__main__':
     runPKMASprocessing()

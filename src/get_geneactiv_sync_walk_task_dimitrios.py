@@ -147,12 +147,11 @@ def get_qc_file(path = './results/'):
     files = os.listdir(path)
     qc_files = sorted([x for x in files if ('QC' in x) and (len(x.split('_')) == 4)], reverse=True)
 
-    return qc_files[0]
+    return os.path.join('./results/', qc_files[0])
 
 
 if __name__ == '__main__':
-    qc_filename = get_qc_file()
-    qc_file = os.path.join('./results/', qc_filename)
+    qc_file = get_qc_file()
     qc_df = pd.read_csv(qc_file)
     gaitrite_qcs = qc_df[~qc_df.pkmas_filename.isna()]
 

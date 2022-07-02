@@ -297,13 +297,22 @@ def pkmas_txt_reader(file, file_type):
     if file_type == 'metrics':
         data_columns = pd.read_csv(file, skiprows=10, nrows=1, sep=';').columns
         data = pd.read_csv(file, skiprows=27, sep=';', names=data_columns, header = None)
+
+        #cadence
+        cadence_dat=pd.read_csv(file, skiprows=14, nrows=1, sep=';')
+        cadence_cols =pd.read_csv(file, skiprows=10, nrows=1, sep=';', header=None)
+        cadence_dat = pd.DataFrame(cadence_dat)
+        cadence_dat.columns = cadence_cols.values.tolist()
+        cadence = cadence_dat['Cadence (steps/min.)'].values[0][0]
+
     elif file_type == 'sensors':
         data = pd.read_csv(file, skiprows=11, sep=';')
+        cadence = []
     else:
         print('please enter a valid file type (sensors or metrics)')
         raise ValueError
 
-    return subject, test_time, data
+    return subject, test_time, cadence, data
 
 if __name__ == '__main__':
     pkmas_txt_reader(file = 'd', file_type='sensors')
