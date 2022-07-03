@@ -216,27 +216,17 @@ def read_visit_data(visit_date, file='../data/CRF/SV2.csv', subject=None):
         raise ValueError
 
     return visit_num, visit_num_string
-    #
-    # visit_matches = []
-    # for index,row in qc_df.iterrows():
-    #     sub_df = visit_df[visit_df['SUBJECT\n'] == row.subject_ID]
-    #     recording_start = pd.to_datetime(row.start_time, format='%Y-%m-%d %H:%M:%S:%f')
-    #     matching_visit = sub_df[pd.to_datetime(recording_start.date()) == sub_df['VISIT DATE']]
-    #     if matching_visit.empty:
-    #         #print('Visit not on list')
-    #         differences = abs(sub_df['VISIT DATE'] - pd.to_datetime(recording_start.date()))
-    #         matching_visit = sub_df.iloc[np.argmin(differences)]
-    #         smallest_difference = np.min(differences)
-    #         matching_str = 'closest match is ± {} days'.format(smallest_difference.days)
-    #     else:
-    #         matching_str = 'matches visit date'
-    #
-    #     visit_matches.append(matching_str)
-    #
-    # qc_df['matching_visit'] = visit_matches
-    # save_files(qc_df, 'C4181001_QC_with_visit_checks')
 
 def get_PKMAS_visit(subject, visit_date):
+    '''
+    Check geneactiv start date vs pkmas file recording dates. Want to verify which pkmas files correspond to a geneactiv
+    .bin file. For mapping purposes
+
+    :param subject: subject ID (string)
+    :param visit_date: visit date (string or datetime)
+    :return: matches_gaitrite (1 or 0 if a geneactiv files has a matching pkmas file), correct_file (filename of
+    corresponding file)
+    '''
     #pkmas_path = '../data/pkmas_metrics/'
     pkmas_path = '../data/pkmas_txt_files/' #changed to for txt files
     files = os.listdir(pkmas_path)
