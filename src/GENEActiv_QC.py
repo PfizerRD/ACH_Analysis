@@ -95,9 +95,15 @@ def GA_QC(filename):
                          pd.to_datetime(start_time_str, format="%Y-%m-%d %H:%M:%S:%f")
 
     #TODO: Make a list of pass/fail criteria
-    visit_number, visit_number_string = read_visit_data(visit_date = start_time_str, subject=subj)
+    #visit_number, visit_number_string = read_visit_data(visit_date = start_time_str, subject=subj)
+    visit_number, visit_number_string, diff_in_visitDate = read_visit_data_v2(visit_date=start_time_str, subject=subj)
 
-    if (recording_duration.days >= 7) & (int(freq_rate) == 50):
+    # Criteria for pass fail:
+    # 1. recording duration > 7 days - from SAP
+    # 2. freq_rate == 50
+    # 3. less than two days difference from visit date and start time of recording
+
+    if (recording_duration.days >= 7) & (int(freq_rate) == 50) & (abs(diff_in_visitDate) < pd.to_timedelta(2, 'days')):
         usable = 1
     else:
         usable = 0
@@ -129,6 +135,7 @@ def GA_QC(filename):
            'filename': filename.split('/')[-1],
            'visit_number': visit_number,
            'visit_number_string': visit_number_string,
+           'delta_CRF_visit_date': diff_in_visitDate, #This is the difference between recording start and CRF date
            'Usable': usable,
            'matches_PKMAS': matches_pkmas,
            'pkmas_filename': gaitrite_filename}

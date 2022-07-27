@@ -238,7 +238,7 @@ def get_PKMAS_visit(subject, visit_date):
             pkmas_file = os.path.join(pkmas_path, sf)
             # gr_header = pd.read_csv(pkmas_file, header=None, names=['meta', 'val'], nrows=10, usecols=(0, 1),
             #                         index_col=0)
-            [subject_reader, test_time, data] = pkmas_txt_reader(pkmas_file, 'metrics')
+            [subject_reader, test_time, cadence, data] = pkmas_txt_reader(pkmas_file, 'metrics')
 
             # get the timestamp
             #gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'])
@@ -303,6 +303,38 @@ def pkmas_txt_reader(file, file_type):
         raise ValueError
 
     return subject, test_time, cadence, data
+
+def read_visit_data_v2(visit_date,
+                       file='/Users/psaltd/Desktop/achondroplasia/data/CRF_data/ach_crf/sv.xlsx', subject=None):
+    visit_df = pd.read_excel(file)
+    visit_df['subject'] = [x.split('-', 1)[1] for x in visit_df['USUBJID']]
+    #visit_df['visit_start'] = [pd.to_datetime(x).date() for x in visit_df.SVSTDTC]
+    visit_df['visit_start'] = [pd.to_datetime(x) for x in visit_df.SVSTDTC]
+    visit_df = visit_df.set_index('visit_start')
+    # Get the row with subject ID == subject and visit dates matching
+    # want to use the SVSTDTC column
+    sub_visit_filt1 = visit_df[(visit_df.subject == subject)]
+    idx_of_closest_time = np.argmin(abs(sub_visit_filt1.index - pd.to_datetime(visit_date, format="%Y-%m-%d %H:%M:%S:%f")))
+    #&
+    sub_visit = pd.DataFrame(sub_visit_filt1.iloc[idx_of_closest_time, :]).T
+    diff_in_visit_dates = (sub_visit_filt1.index - pd.to_datetime(visit_date,
+                                                                  format="%Y-%m-%d %H:%M:%S:%f"))[idx_of_closest_time]
+
+    if sub_visit.empty:
+        print('Subject: {} visit: {} not found in CRF data'.format(subject, visit_date))
+        visit_num = ''
+        visit_num_string = ''
+    elif len(sub_visit) == 1:
+        visit_num_string = sub_visit.VISIT.iloc[0]
+        visit_num = sub_visit.VISITNUM.astype('int').iloc[0]
+    elif len(sub_visit) == 2: #instance where dates fall into multiple visit #s
+        sub_visit_filtered = sub_visit.iloc[np.argmin(sub_visit.VISITNUM)] #use min visit number
+        visit_num_string = sub_visit_filtered.VISIT
+        visit_num = sub_visit_filtered.VISITNUM.astype('int')
+    else:
+        raise ValueError
+
+    return visit_num, visit_num_string, diff_in_visit_dates
 
 if __name__ == '__main__':
     pkmas_txt_reader(file = 'd', file_type='sensors')
