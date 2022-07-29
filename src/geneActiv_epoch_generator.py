@@ -248,12 +248,13 @@ def plot_GA_Epochs(file, show_flag=False):
 if __name__ == '__main__':
     #path = '../data/raw/'
     path = '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/'
+    exclude = ['GBR-03-002_left wrist_059546_2022-03-15 13-36-12.bin'] #exclusion list
     for file in os.listdir(path):
         if not file.endswith('.bin'):
             continue
 
         #verify with QC
-        qc_file = './results/C4181001_GA_QC_20220601.csv'
+        qc_file = './results/C4181001_GA_QC_20220727.csv'
         qc_df = pd.read_csv(qc_file)
         qc_df = qc_df[qc_df.Usable != 0]
         sub_qc = qc_df[qc_df.filename == file]
@@ -267,7 +268,7 @@ if __name__ == '__main__':
 
         save_path = '../data/processed/epochs/'
         save_name = '{}_visit{}_60s_epoch.csv'.format(file.split('.')[0], str(sub_qc_visit))
-        if os.path.exists(os.path.join(save_path, save_name)):
+        if os.path.exists(os.path.join(save_path, save_name)) or file in exclude:
             continue
         try:
             geneActiv_epoch_generator(path+file, save_name)

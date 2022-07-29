@@ -37,7 +37,7 @@ def get_manual_synchronization(ga_time, ga_accel, pkm_time, pkm_press_sum):
         figsize=(10, 5),
         gridspec_kw={'height_ratios': [1, 0.2, 0.1]},
     )
-    ax.set_title('PKMas - GeneActiv Alignment')
+    ax.set_title('PKMAS - GeneActiv Alignment')
     ax.set_xlabel('Time [s]')
 
     pkmas_line, = ax.plot(pkm_time, pkm_press_sum / pkm_press_sum.max())
@@ -101,15 +101,18 @@ def synchronize_geneactive_gaitrite(geneactive_file, gaitrite_sensor_file, task_
                             index_col=0)
     gr = pd.read_csv(gaitrite_sensor_file, skiprows=11)
 
-    [subject, gr_header, gr] = pkmas_txt_reader(gaitrite_sensor_file, 'sensors')
+    #[subject, gr_header, gr] = pkmas_txt_reader(gaitrite_sensor_file, 'sensors')
+    [subject, test_time, cadence, data] = pkmas_txt_reader(gaitrite_sensor_file, 'sensors')
 
     # get the timestamp
     #gr_timestamp = pd.to_datetime(gr_header.loc['Test Time', 'val'], utc=True)
-    gr_timestamp = pd.to_datetime(gr_header)
+    #gr_timestamp = pd.to_datetime(gr_header)
+    gr_timestamp = pd.to_datetime(test_time)
     gr_time = int(gr_timestamp.to_datetime64()) / 1e9
 
     # groupby time and sum
-    press = gr.groupby('Time (sec.)', as_index=False).sum('Level')
+    #press = gr.groupby('Time (sec.)', as_index=False).sum('Level')
+    press = data.groupby('Time (sec.)', as_index=False).sum('Level')
     press['time'] = press['Time (sec.)'] + gr_time
 
     # get the offset
@@ -134,7 +137,8 @@ def synchronize_geneactive_gaitrite(geneactive_file, gaitrite_sensor_file, task_
     ax.set_ylabel('Signal')
     ax.legend()
     f.tight_layout()
-    save_path = '../data/gaitrite_20220610/'
+    # save_path = '../data/gaitrite_20220610/'
+    save_path = '../data/gaitrite_processed/'
     f.savefig(Path(save_path + task_file).with_suffix(".png"))
 
     if not os.path.exists(save_path): os.mkdir(save_path)
@@ -169,15 +173,18 @@ if __name__ == '__main__':
         #     '/Users/psaltd/Desktop/achondroplasia/data/GENEActiv_GAITRite_Alignment/' + geneA_save_name + '.npz'): continue
         if os.path.exists('../data/gaitrite_processed/' + geneA_save_name + '.npz'): continue
         gaitrite_name = row.pkmas_filename
-        if len(gaitrite_name) > 70:
+        if len(gaitrite_name) > 100:
             print(gaitrite_name)
             tmp_list = gaitrite_name.strip('[').strip(']')
             gaitrite_names = tmp_list.split(', ')
             for name in gaitrite_names:
-                name = name.strip(']').strip('[').replace('G.txt', 'E.txt')
-                which_vis = '_'.join(name.split('_')[1:]).strip(".csv'")
+                name_idx = gaitrite_names.index(name) # find the index in list
+                name = name.strip(']').strip('[').strip("'").replace('G.txt', 'E.txt')
+                which_task = name_idx + 1
                 #geneA_save_name = '{}_v{}_{}'.format(row.filename.strip('.bin'), which_vis, 'gait_task')
-                geneA_save_name = '{}_{}'.format(name.strip(' - E.txt'), 'gait_task')
+                geneA_save_name = '{}_gait_task_test{}'.format(row.filename.strip('.bin'), which_task)
+                #geneA_save_name = '{}_{}'.format(name.strip(' - E.txt'), 'gait_task')
+
                 if os.path.exists('../data/gaitrite_processed/' + geneA_save_name + '.npz'): continue
                 gait_name_final = os.path.join(gaitrite_path, name.strip("'"))
                 offset = synchronize_geneactive_gaitrite(geneA_name,
@@ -189,7 +196,9 @@ if __name__ == '__main__':
                 print(offset, geneA_save_name)
         else:
             # print(gaitrite_name.__len__())
+            gaitrite_name = gaitrite_name.replace('G.txt', 'E.txt')
             gait_name_final = os.path.join(gaitrite_path, gaitrite_name)
+            geneA_save_name = '{}_test1'.format(geneA_save_name)
             # This file from GBR-03-002 is not able to be read with SKDH
             if geneA_name == '/Users/psaltd/Desktop/achondroplasia/data/raw_zone/c4181001/sensordata/GBR-03-002_left wrist_059546_2022-03-15 13-36-12.bin':
                 continue
@@ -207,7 +216,9 @@ if __name__ == '__main__':
     new_df['filename'] = [x.split('/')[-1] for x in new_df.ga_files.values]
 
     gaitrite_qcs = gaitrite_qcs.merge(new_df)
-    gaitrite_qcs.to_csv('./results/C4181001_gaitrite_alignment_{}.csv'.format(datetime.today().strftime('%Y%m%d')),
+    # gaitrite_qcs.to_csv('./results/C4181001_gaitrite_alignment_{}.csv'.format(datetime.today().strftime('%Y%m%d')),
+    #                     index=False)
+    gaitrite_qcs.to_csv('../data/gaitrite_processed/C4181001_gaitrite_alignment_{}.csv'.format(datetime.today().strftime('%Y%m%d')),
                         index=False)
 
     # [-1.9354838709677438, 'DNK-01-023_left wrist_059554_2021-09-09 11-25-58_visit1_test1_PKMAS_carpet_sensor_gait_task']

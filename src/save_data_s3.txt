@@ -12,22 +12,22 @@ aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/proc
 
 # Save GENEActiv QC to S3
 
-aws s3 --profile saml cp /Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_GA_QC_20220610.csv s3://ecd-dmti-medinfo-master/C4181001/analysis/QC/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+aws s3 --profile saml cp /Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_GA_QC_20220727.csv s3://ecd-dmti-medinfo-master/C4181001/analysis/QC/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
 
 # Save PKMAS QC to S3
 
-aws s3 --profile saml cp /Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_pkmas_qc_20220610.csv s3://ecd-dmti-medinfo-master/C4181001/analysis/QC/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+aws s3 --profile saml cp /Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_pkmas_qc_20220727.csv s3://ecd-dmti-medinfo-master/C4181001/analysis/QC/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
 
 # save geneactiv gaitrite samples to S3
-aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/gaitrite_20220610/ s3://ecd-dmti-medinfo-master/C4181001/processed/geneactiv_gaitrite_segments_20220610/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/gaitrite_processed/ s3://ecd-dmti-medinfo-master/C4181001/processed/geneactiv_gaitrite_segments_20220728/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
 
 # Save PKMAS summary metrics to S3
 
-aws s3 --profile saml cp /Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_pkmas_gait_metrics_20220610.csv s3://ecd-dmti-medinfo-master/C4181001/analysis/gaitrite/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+aws s3 --profile saml cp /Users/psaltd/Documents/GitHub/ACH_Analysis/src/results/C4181001_pkmas_gait_metrics_20220727.csv s3://ecd-dmti-medinfo-master/C4181001/analysis/gaitrite/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
 
 # Save PKMAS files
 
-aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/gaitrite_20220608/ s3://ecd-dmti-medinfo-master/C4181001/processed/pkmas_files/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
+aws s3 --profile saml sync /Users/psaltd/Documents/GitHub/ACH_Analysis/data/pkmas_txt_files/ s3://ecd-dmti-medinfo-master/C4181001/processed/pkmas_files/ --exclude "*.DS_Store*" --acl bucket-owner-full-control --dryrun
 
 # Pull data from S3 -- PKMAS files
 aws s3 --profile saml sync s3://ecd-dmti-medinfo-master/C4181001/processed/pkmas_files/ /Users/psaltd/Documents/GitHub/ACH_Analysis/data/pkmas_txt_files/ --exclude *.csv --dryrun
